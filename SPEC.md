@@ -433,7 +433,7 @@ type DeployMarker = {
   - renders skeleton slots until parts arrive
 - `BoardSkeleton`
 - `TimelineCard`
-  - Recharts line chart
+  - hand-rolled SVG or Recharts line chart
   - anomaly band
   - deploy marker
 - `HeatmapCard`
@@ -469,7 +469,7 @@ Allowed core dependencies:
 - Next.js
 - Trigger.dev SDK
 - `@clickhouse/client`
-- Recharts
+- hand-rolled SVG/CSS charts or Recharts
 - Tailwind/shadcn-style primitives
 - Zod
 

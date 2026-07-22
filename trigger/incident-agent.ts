@@ -4,7 +4,13 @@ import { openai } from "@ai-sdk/openai";
 import { createProviderRegistry, stepCountIs, streamText, tool } from "ai";
 import type { InferUITools, UIDataTypes, UIMessage } from "ai";
 import { z } from "zod";
-import { buildIncidentBoard } from "../src/lib/investigation";
+import {
+  buildLiveIncidentBoard,
+  getDiffPart,
+  getErrorBudgetPart,
+  getHeatmapPart,
+  getTimelinePart
+} from "../src/lib/live-clickhouse";
 import type { IncidentBoard } from "../src/lib/types";
 
 const registry = createProviderRegistry({ openai });
@@ -45,8 +51,7 @@ export const queryLatencyTask = schemaTask({
   id: "query-latency",
   schema: windowSchema,
   run: async () => {
-    const board = buildIncidentBoard();
-    return board.timeline;
+    return getTimelinePart();
   }
 });
 
@@ -54,8 +59,7 @@ export const queryHeatmapTask = schemaTask({
   id: "query-heatmap",
   schema: windowSchema,
   run: async () => {
-    const board = buildIncidentBoard();
-    return board.heatmap;
+    return getHeatmapPart();
   }
 });
 
@@ -63,7 +67,7 @@ export const rankSuspectsTask = schemaTask({
   id: "rank-suspects",
   schema: windowSchema,
   run: async () => {
-    const board = buildIncidentBoard();
+    const board = await buildLiveIncidentBoard();
     return board.suspects;
   }
 });
@@ -72,8 +76,7 @@ export const queryDiffTask = schemaTask({
   id: "query-diff",
   schema: z.object({ deployTime: z.string().default("2026-07-22 14:32:00") }),
   run: async () => {
-    const board = buildIncidentBoard();
-    return board.diff;
+    return getDiffPart();
   }
 });
 
@@ -81,8 +84,7 @@ export const calculateErrorBudgetTask = schemaTask({
   id: "calculate-error-budget",
   schema: windowSchema,
   run: async () => {
-    const board = buildIncidentBoard();
-    return board.errorBudget;
+    return getErrorBudgetPart();
   }
 });
 
@@ -150,7 +152,7 @@ export const incidentAgent = chat.withUIMessage<IncidentUIMessage>().agent({
     });
   },
   run: async ({ messages, signal, tools }) => {
-    const board = buildIncidentBoard();
+    const board = await buildLiveIncidentBoard();
 
     chat.response.write({
       type: "data-timeline",

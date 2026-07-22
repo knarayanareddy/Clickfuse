@@ -80,6 +80,7 @@ if (metrics.errorBudget.consumedPct >= 30 && metrics.errorBudget.consumedPct <= 
 
 const schema = existsSync("clickhouse/schema.sql") ? readFileSync("clickhouse/schema.sql", "utf8") : "";
 const agentSource = existsSync("trigger/incident-agent.ts") ? readFileSync("trigger/incident-agent.ts", "utf8") : "";
+const liveClickHouseSource = existsSync("src/lib/live-clickhouse.ts") ? readFileSync("src/lib/live-clickhouse.ts", "utf8") : "";
 if (
   schema.includes("AggregatingMergeTree") &&
   schema.includes("quantileState(0.95)") &&
@@ -95,11 +96,23 @@ if (
   agentSource.includes("prompts.define") &&
   agentSource.includes("chat.local<") &&
   agentSource.includes("ai.toolExecute") &&
-  agentSource.includes("streamText")
+  agentSource.includes("streamText") &&
+  agentSource.includes("buildLiveIncidentBoard")
 ) {
   pass("trigger agent", "live agent uses prompts.define, chat.local, ai.toolExecute and streamText without @ts-nocheck");
 } else {
   fail("trigger agent", "expected typed Trigger.dev live-agent wiring is incomplete");
+}
+
+if (
+  liveClickHouseSource.includes("client.query") &&
+  liveClickHouseSource.includes("query_params") &&
+  liveClickHouseSource.includes("timelineQuery") &&
+  liveClickHouseSource.includes("diffQuery")
+) {
+  pass("live ClickHouse", "live task path executes parameterized ClickHouse timeline/diff queries");
+} else {
+  fail("live ClickHouse", "expected live parameterized ClickHouse task path is missing");
 }
 
 if (hasClickHouseEnv()) {
