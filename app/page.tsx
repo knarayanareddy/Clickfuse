@@ -5,6 +5,7 @@ import { useTriggerChatTransport } from "@trigger.dev/sdk/chat/react";
 import { FormEvent, useMemo, useState } from "react";
 import { mintChatAccessToken, startChatSession } from "./actions";
 import { buildIncidentBoard } from "../src/lib/investigation";
+import type { IncidentBoard } from "../src/lib/types";
 import type { ServiceName } from "../src/lib/types";
 import type { incidentAgent } from "../trigger/incident-agent";
 
@@ -13,14 +14,18 @@ export default function Home() {
   const [question, setQuestion] = useState("Why did checkout latency spike after the 14:32 deploy?");
   const [selectedService, setSelectedService] = useState<ServiceName | "all">("all");
   const [openEvidence, setOpenEvidence] = useState<string | null>("timeline");
-  const board = useMemo(() => buildIncidentBoard(), []);
+  const fixtureBoard = useMemo(() => buildIncidentBoard(), []);
   const liveMode = process.env.NEXT_PUBLIC_TRIGGER_CHAT_ENABLED === "true";
   const transport = useTriggerChatTransport<typeof incidentAgent>({
     task: "incident-agent",
     accessToken: ({ chatId }) => mintChatAccessToken(chatId),
     startSession: ({ chatId, clientData }) => startChatSession({ chatId, clientData })
   });
-  const { sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, status, error } = useChat({ transport });
+  const board = useMemo(
+    () => (liveMode ? mergeStreamedBoard(fixtureBoard, messages as unknown[]) : fixtureBoard),
+    [fixtureBoard, liveMode, messages]
+  );
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +75,41 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+function mergeStreamedBoard(fixture: IncidentBoard, messages: unknown[]): IncidentBoard {
+  const board: IncidentBoard = structuredClone(fixture);
+  for (const message of messages) {
+    const parts = getMessageParts(message);
+    for (const part of parts) {
+      if (!isDataPart(part)) continue;
+      if (part.type === "data-timeline") board.timeline = part.data as IncidentBoard["timeline"];
+      if (part.type === "data-heatmap") board.heatmap = part.data as IncidentBoard["heatmap"];
+      if (part.type === "data-diff") board.diff = part.data as IncidentBoard["diff"];
+      if (part.type === "data-suspect") board.suspects = part.data as IncidentBoard["suspects"];
+      if (part.type === "data-error-budget") board.errorBudget = part.data as IncidentBoard["errorBudget"];
+      if (part.type === "data-verdict") board.verdict = part.data as IncidentBoard["verdict"];
+    }
+  }
+  return board;
+}
+
+function getMessageParts(message: unknown): unknown[] {
+  if (message && typeof message === "object" && "parts" in message && Array.isArray(message.parts)) {
+    return message.parts;
+  }
+  return [];
+}
+
+function isDataPart(part: unknown): part is { type: string; data: unknown } {
+  return Boolean(
+    part &&
+      typeof part === "object" &&
+      "type" in part &&
+      typeof part.type === "string" &&
+      part.type.startsWith("data-") &&
+      "data" in part
   );
 }
 

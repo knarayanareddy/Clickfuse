@@ -31,20 +31,6 @@ if (!hasClickHouseEnv()) {
 }
 
 const client = await clickhouseClient({ readonly: false });
-
-await client.insert({
-  table: "deploy_events",
-  values: [
-    {
-      deployed_at: "2026-07-22 14:32:00.000",
-      service: "payment-service",
-      version: "v2.4.1",
-      diff: JSON.stringify({ retry_timeout: { before: "3s", after: "15s" } })
-    }
-  ],
-  format: "JSONEachRow"
-});
-
 const httpRows: HttpRow[] = [];
 const spanRows: SpanRow[] = [];
 
@@ -92,6 +78,19 @@ await client.insert({
 await client.insert({
   table: "span_logs",
   values: spanRows,
+  format: "JSONEachRow"
+});
+
+await client.insert({
+  table: "deploy_events",
+  values: [
+    {
+      deployed_at: "2026-07-22 14:32:00.000",
+      service: "payment-service",
+      version: "v2.4.1",
+      diff: JSON.stringify({ retry_timeout: { before: "3s", after: "15s" } })
+    }
+  ],
   format: "JSONEachRow"
 });
 

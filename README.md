@@ -52,6 +52,8 @@ pnpm dev
 
 In live mode, the frontend uses `useTriggerChatTransport`, the server mints a session-scoped public access token, and `trigger/incident-agent.ts` returns an AI SDK `streamText()` result. The agent declares five task-backed tools with `ai.toolExecute()`, initializes run-scoped context with `chat.local`, and resolves the `clickfuse-incident-investigator` prompt with `prompts.define()` so the Trigger.dev dashboard can show generation telemetry.
 
+When ClickHouse credentials are present, those task bodies execute the parameterized SQL in `src/lib/queries.ts` through the readonly ClickHouse client. Without credentials, they fall back to the deterministic fixture board so offline judging still works.
+
 ## Live ClickHouse setup
 
 Create `.env.local` from `.env.example`:
@@ -91,7 +93,7 @@ It models the investigation as separate schema tasks:
 - `rank-suspects`
 - `calculate-error-budget`
 
-Those tasks are the intended observability units in the Trigger.dev run trace. The demo should show the run trace after the board completes to prove orchestration, timings and task boundaries. In fixture mode, the same deterministic `buildIncidentBoard()` data powers the board without requiring credentials.
+Those tasks are the intended observability units in the Trigger.dev run trace. The demo should show the run trace after the board completes to prove orchestration, timings and task boundaries. In fixture mode, the same deterministic `buildIncidentBoard()` data powers the board without requiring credentials; in live mode, `src/lib/live-clickhouse.ts` uses ClickHouse query results for timeline, heatmap, diff, deploy marker and error budget panels.
 
 ## Smoke checks
 
@@ -110,6 +112,7 @@ The smoke suite checks:
 - error-budget burn is demo-visible;
 - the AggregatingMergeTree State/Merge pattern is present;
 - Trigger.dev live-agent wiring uses `prompts.define`, `chat.local`, `ai.toolExecute` and `streamText`;
+- live ClickHouse task path uses parameterized `client.query` calls;
 - local secret files are not present.
 
 Warnings are acceptable in offline fixture mode. Failures mean the demo story is not strong enough to record.
