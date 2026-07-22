@@ -1,18 +1,33 @@
 "use client";
 
+import { useChat } from "@ai-sdk/react";
+import { useTriggerChatTransport } from "@trigger.dev/sdk/chat/react";
 import { FormEvent, useMemo, useState } from "react";
+import { mintChatAccessToken, startChatSession } from "./actions";
 import { buildIncidentBoard } from "../src/lib/investigation";
 import type { ServiceName } from "../src/lib/types";
+import type { incidentAgent } from "../trigger/incident-agent";
 
 export default function Home() {
   const [submitted, setSubmitted] = useState(false);
+  const [question, setQuestion] = useState("Why did checkout latency spike after the 14:32 deploy?");
   const [selectedService, setSelectedService] = useState<ServiceName | "all">("all");
   const [openEvidence, setOpenEvidence] = useState<string | null>("timeline");
   const board = useMemo(() => buildIncidentBoard(), []);
+  const liveMode = process.env.NEXT_PUBLIC_TRIGGER_CHAT_ENABLED === "true";
+  const transport = useTriggerChatTransport<typeof incidentAgent>({
+    task: "incident-agent",
+    accessToken: ({ chatId }) => mintChatAccessToken(chatId),
+    startSession: ({ chatId, clientData }) => startChatSession({ chatId, clientData })
+  });
+  const { sendMessage, status, error } = useChat({ transport });
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
+    if (liveMode) {
+      void sendMessage({ text: question });
+    }
   }
 
   return (
@@ -32,10 +47,16 @@ export default function Home() {
       <form className="prompt" onSubmit={submit}>
         <input
           aria-label="Incident question"
-          defaultValue="Why did checkout latency spike after the 14:32 deploy?"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
         />
-        <button type="submit">Investigate</button>
+        <button type="submit">{liveMode ? "Run live agent" : "Render fixture board"}</button>
       </form>
+      <p className={liveMode ? "agent-status live" : "agent-status"}>
+        {liveMode
+          ? `Live Trigger.dev mode enabled · ${status}${error ? ` · ${error.message}` : ""}`
+          : "Offline fixture mode enabled · set NEXT_PUBLIC_TRIGGER_CHAT_ENABLED=true for live Trigger.dev streaming."}
+      </p>
 
       {!submitted ? (
         <BoardSkeleton />
