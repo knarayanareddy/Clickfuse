@@ -133,11 +133,13 @@ Show:
 - Trigger.dev `chat.agent()` run
 - named schemaTask spans: `query-latency`, `query-heatmap`, `rank-suspects`, `query-diff`, `calculate-error-budget`
 - prompt/model telemetry if available
-- ClickHouse `system.query_log` rows for `http_logs` / `span_logs`
+- ClickHouse `system.query_log` rows with `query_duration_ms`, `read_rows`, and `result_rows`
 
 Narration:
 
 > Trigger.dev orchestrates the investigation as durable, observable subtasks. ClickHouse stores and queries the event data; the query log proves the board was generated from real database work.
+>
+> The agent's ClickHouse client runs with `readonly=2`, parameterized queries, and capped result rows, so the investigation can read production data without modifying it.
 
 ### 4:15-4:30 — Close
 
@@ -149,7 +151,8 @@ Narration:
 
 ## Demo cut rules
 
-- If the run takes too long, pre-warm data and keep narration moving.
+- Before recording, run the incident question once to populate `system.query_log` and warm ClickHouse caches. Discard that session and record with a fresh one.
+- If the run takes too long, keep narration moving and skip non-essential drawer expansions.
 - If an advanced SQL query fails, use the fallback query path and do not mention the failed path.
 - If the typed Trigger.dev UI builder creates version friction, use manual typed data parts and focus the demo on visible spans.
 - Do not add new features after the demo script is recordable.
