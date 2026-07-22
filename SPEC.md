@@ -260,16 +260,26 @@ Demo query:
 
 ```sql
 SELECT
+    event_time,
     query_duration_ms,
     read_rows,
     result_rows,
     query
 FROM system.query_log
 WHERE type = 'QueryFinish'
-  AND (query LIKE '%http_logs%' OR query LIKE '%span_logs%')
+  AND event_time >= now() - INTERVAL 1 HOUR
+  AND query_kind = 'Select'
+  AND (
+      query LIKE '%http_logs%'
+      OR query LIKE '%span_logs%'
+      OR query LIKE '%latency_rollup_1m%'
+      OR query LIKE '%deploy_events%'
+  )
 ORDER BY event_time DESC
 LIMIT 5;
 ```
+
+Before recording, run the incident question once to populate `system.query_log`. If table-name filtering differs in the deployed environment, use the same time-based filter and sort by recent `Select` queries from the demo session rather than relying on exact query text.
 
 ## ClickHouse safety
 
