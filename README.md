@@ -13,7 +13,7 @@ Instead of returning a paragraph, it builds an evidence-backed incident board: a
 - ClickHouse schema with `MergeTree` source tables and an `AggregatingMergeTree` rollup using `quantileState`, `sumState` and `countState`.
 - Window-function anomaly SQL and before/after span diff SQL.
 - Seed script for the demo incident: `payment-service` v2.4.1 changes retry timeout from `3s` to `15s` at `14:32`.
-- Trigger.dev task/agent scaffold with durable query tasks and typed board parts.
+- Trigger.dev chat agent with versioned prompt telemetry, task-backed tools, typed board parts and optional live streaming.
 - `pnpm smoke` checks that the demo story is visually obvious before recording.
 
 ## Quick start
@@ -31,6 +31,26 @@ Why did checkout latency spike after the 14:32 deploy?
 ```
 
 The app works in fixture mode without ClickHouse credentials so judges can inspect the product offline.
+
+## Live Trigger.dev chat mode
+
+Fixture mode is the safe default. For the live demo path, configure Trigger.dev and OpenAI credentials, then opt into the transport:
+
+```bash
+TRIGGER_SECRET_KEY=
+TRIGGER_PROJECT_ID=
+OPENAI_API_KEY=
+NEXT_PUBLIC_TRIGGER_CHAT_ENABLED=true
+```
+
+Run the Trigger worker and app in separate terminals:
+
+```bash
+pnpm trigger:dev
+pnpm dev
+```
+
+In live mode, the frontend uses `useTriggerChatTransport`, the server mints a session-scoped public access token, and `trigger/incident-agent.ts` returns an AI SDK `streamText()` result. The agent declares five task-backed tools with `ai.toolExecute()`, initializes run-scoped context with `chat.local`, and resolves the `clickfuse-incident-investigator` prompt with `prompts.define()` so the Trigger.dev dashboard can show generation telemetry.
 
 ## Live ClickHouse setup
 
@@ -61,7 +81,7 @@ The ClickHouse client is configured with `readonly=2` for query execution paths.
 
 ## Trigger.dev
 
-The Trigger.dev scaffold lives in `trigger/incident-agent.ts`.
+The Trigger.dev agent lives in `trigger/incident-agent.ts`.
 
 It models the investigation as separate schema tasks:
 
@@ -71,7 +91,7 @@ It models the investigation as separate schema tasks:
 - `rank-suspects`
 - `calculate-error-budget`
 
-Those tasks are the intended observability units in the Trigger.dev run trace. The demo should show the run trace after the board completes to prove orchestration, timings and task boundaries.
+Those tasks are the intended observability units in the Trigger.dev run trace. The demo should show the run trace after the board completes to prove orchestration, timings and task boundaries. In fixture mode, the same deterministic `buildIncidentBoard()` data powers the board without requiring credentials.
 
 ## Smoke checks
 
@@ -89,6 +109,7 @@ The smoke suite checks:
 - before/after diff shows a 7–10x payment span amplification;
 - error-budget burn is demo-visible;
 - the AggregatingMergeTree State/Merge pattern is present;
+- Trigger.dev live-agent wiring uses `prompts.define`, `chat.local`, `ai.toolExecute` and `streamText`;
 - local secret files are not present.
 
 Warnings are acceptable in offline fixture mode. Failures mean the demo story is not strong enough to record.

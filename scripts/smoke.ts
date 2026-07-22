@@ -79,6 +79,7 @@ if (metrics.errorBudget.consumedPct >= 30 && metrics.errorBudget.consumedPct <= 
 }
 
 const schema = existsSync("clickhouse/schema.sql") ? readFileSync("clickhouse/schema.sql", "utf8") : "";
+const agentSource = existsSync("trigger/incident-agent.ts") ? readFileSync("trigger/incident-agent.ts", "utf8") : "";
 if (
   schema.includes("AggregatingMergeTree") &&
   schema.includes("quantileState(0.95)") &&
@@ -87,6 +88,18 @@ if (
   pass("rollup", "AggregatingMergeTree State/Merge schema present");
 } else {
   fail("rollup", "AggregatingMergeTree State/Merge schema missing or incomplete");
+}
+
+if (
+  !agentSource.includes("@ts-nocheck") &&
+  agentSource.includes("prompts.define") &&
+  agentSource.includes("chat.local<") &&
+  agentSource.includes("ai.toolExecute") &&
+  agentSource.includes("streamText")
+) {
+  pass("trigger agent", "live agent uses prompts.define, chat.local, ai.toolExecute and streamText without @ts-nocheck");
+} else {
+  fail("trigger agent", "expected typed Trigger.dev live-agent wiring is incomplete");
 }
 
 if (hasClickHouseEnv()) {

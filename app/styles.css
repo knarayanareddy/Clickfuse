@@ -102,6 +102,16 @@ h1 {
   cursor: pointer;
 }
 
+.agent-status {
+  margin: -10px 0 22px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.agent-status.live {
+  color: #86efac;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
