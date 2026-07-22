@@ -1,0 +1,11 @@
+node_modules
+.next
+.turbo
+dist
+out
+.env
+.env.*
+!.env.example
+coverage
+*.tsbuildinfo
+clickfuse-fixture.json

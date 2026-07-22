@@ -1,0 +1,37 @@
+{
+  "name": "clickfuse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "smoke": "node --experimental-strip-types scripts/smoke.ts",
+    "seed:fixture": "node --experimental-strip-types scripts/write-fixture.ts",
+    "seed:clickhouse": "node --experimental-strip-types scripts/seed-clickhouse.ts",
+    "trigger:dev": "trigger dev",
+    "trigger:deploy": "trigger deploy"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.12.1",
+    "@trigger.dev/sdk": "^4.5.6",
+    "ai": "^5.0.0",
+    "next": "^15.4.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "trigger.dev": "^4.5.6",
+    "typescript": "^5.8.3"
+  }
+}

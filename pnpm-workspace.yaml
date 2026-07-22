@@ -1,0 +1,4 @@
+allowBuilds:
+  '@depot/cli': false
+  esbuild: true
+  sharp: true
