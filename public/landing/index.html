@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clickfuse — Evidence-backed incident proof boards</title>
+  <meta name="description" content="Ask why checkout latency spiked after a deploy. Clickfuse builds an evidence-backed incident board from ClickHouse — orchestrated by Trigger.dev." />
+  <meta property="og:title" content="Clickfuse — Evidence-backed incident proof boards" />
+  <meta property="og:description" content="A chat agent that assembles anomaly timelines, heatmaps, diffs, and verdict cards — every panel backed by ClickHouse SQL." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Clickfuse home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L4 6.5V12c0 5.25 3.4 9.74 8 11 4.6-1.26 8-5.75 8-11V6.5L12 2Z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-name">Clickfuse</span>
+    </a>
+    <nav class="nav">
+      <a href="#problem">Problem</a>
+      <a href="#board">Board</a>
+      <a href="#how">How it works</a>
+      <a href="#stack">Stack</a>
+    </nav>
+    <div class="header-actions">
+      <a class="btn btn-ghost" href="https://github.com/knarayanareddy/Clickfuse" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.6 1.2 3.2.9.1-.7.4-1.2.7-1.5-2.6-.3-5.4-1.3-5.4-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.4 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-ghost" href="https://youtu.be/CF0X12awlP8" target="_blank" rel="noopener noreferrer">Watch demo</a>
+      <a class="btn btn-primary" href="https://clickfuse.vercel.app" target="_blank" rel="noopener noreferrer">Live demo</a>
+    </div>
+    <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="pill">
+            <span class="pill-dot"></span>
+            ClickHouse + Trigger.dev Build Week
+          </div>
+          <h1>
+            Ask one SRE question.<br />
+            Get a <em>proof board</em>, not a paragraph.
+          </h1>
+          <p class="lede">
+            Clickfuse is a chat agent that turns
+            <span class="mono">“Why did checkout latency spike after the 14:32 deploy?”</span>
+            into an evidence-backed incident board — anomaly timeline, service heatmap,
+            before/after diff, suspect ladder, error-budget impact, and a verdict card.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary btn-lg" href="https://clickfuse.vercel.app" target="_blank" rel="noopener noreferrer">
+              Open live demo
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="btn btn-secondary btn-lg" href="https://github.com/knarayanareddy/Clickfuse" target="_blank" rel="noopener noreferrer">
+              View source
+            </a>
+            <a class="btn btn-ghost btn-lg" href="https://youtu.be/CF0X12awlP8" target="_blank" rel="noopener noreferrer">
+              Watch video
+            </a>
+          </div>
+          <ul class="hero-meta">
+            <li><strong>Fixture mode</strong> works offline — no credentials required</li>
+            <li><strong>Every panel</strong> opens a “Show evidence” drawer with SQL</li>
+            <li><strong>MIT licensed</strong> prototype for one strong incident story</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="board-frame">
+            <div class="board-chrome">
+              <div class="chrome-dots"><i></i><i></i><i></i></div>
+              <div class="chrome-title">Incident Proof Board</div>
+              <div class="chrome-badge">fixture</div>
+            </div>
+            <div class="board-body">
+              <div class="chat-line">
+                <span class="chat-label">you</span>
+                <p>Why did checkout latency spike after the 14:32 deploy?</p>
+              </div>
+
+              <div class="panel panel-timeline">
+                <div class="panel-head">
+                  <span>Timeline · p95 latency</span>
+                  <span class="tag tag-warn">anomaly</span>
+                </div>
+                <div class="spark">
+                  <svg viewBox="0 0 320 72" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="band" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="rgba(255,196,72,.22)"/>
+                        <stop offset="100%" stop-color="rgba(255,196,72,0)"/>
+                      </linearGradient>
+                    </defs>
+                    <path class="band" d="M0 40 C40 38, 60 42, 90 39 S140 36, 160 38 L160 58 L0 58 Z" fill="url(#band)"/>
+                    <path class="line-base" d="M0 42 C30 40, 70 44, 110 41 S150 38, 158 40" fill="none" stroke="rgba(148,163,184,.55)" stroke-width="1.5"/>
+                    <path class="line-spike" d="M158 40 C175 38, 190 22, 210 18 S250 14, 280 16 310 20, 320 22" fill="none" stroke="#ffc448" stroke-width="2.2"/>
+                    <line class="deploy" x1="158" y1="8" x2="158" y2="64" stroke="#ff6b4a" stroke-width="1.4" stroke-dasharray="3 3"/>
+                    <text x="164" y="16" fill="#ff6b4a" font-size="9" font-family="IBM Plex Mono, monospace">14:32 deploy</text>
+                  </svg>
+                </div>
+                <div class="panel-foot">
+                  <span>baseline ~150ms</span>
+                  <span class="accent">after ~2.6×</span>
+                </div>
+              </div>
+
+              <div class="panel-row">
+                <div class="panel panel-heat">
+                  <div class="panel-head"><span>Service heatmap</span></div>
+                  <div class="heat-grid">
+                    <div class="heat hot"><span>payment</span><b>8.3×</b></div>
+                    <div class="heat mid"><span>checkout</span><b>2.6×</b></div>
+                    <div class="heat cool"><span>inventory</span><b>1.0×</b></div>
+                    <div class="heat cool"><span>shipping</span><b>0.9×</b></div>
+                  </div>
+                </div>
+                <div class="panel panel-suspects">
+                  <div class="panel-head"><span>Suspect ladder</span></div>
+                  <ol class="ladder">
+                    <li class="top"><span>1</span> payment-service <em>v2.4.1</em></li>
+                    <li><span>2</span> checkout-api</li>
+                    <li><span>3</span> inventory</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="panel panel-verdict">
+                <div class="panel-head">
+                  <span>Verdict</span>
+                  <span class="tag tag-ok">actionable</span>
+                </div>
+                <p>payment-service v2.4.1 changed retry timeout <code>3s → 15s</code> at 14:32, amplifying payment spans ~8.3× and burning error budget on checkout.</p>
+                <div class="verdict-action">Roll back v2.4.1 · restore 3s timeout</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="section">
+      <div class="container narrow">
+        <p class="eyebrow">The problem</p>
+        <h2>Incident response still starts with a wall of text.</h2>
+        <p class="section-lede">
+          Logs, traces, and dashboards exist — but when checkout breaks after a deploy,
+          SREs still stitch the story together by hand. Generic “chat with your data”
+          returns prose. Clickfuse returns a board you can defend in a war room.
+        </p>
+        <div class="compare">
+          <div class="compare-card bad">
+            <h3>Typical AI answer</h3>
+            <p class="mono-block">“It looks like latency increased around the deploy. You may want to check the payment service and recent config changes…”</p>
+            <ul>
+              <li>No visual proof</li>
+              <li>No query provenance</li>
+              <li>Hard to act on under pressure</li>
+            </ul>
+          </div>
+          <div class="compare-card good">
+            <h3>Clickfuse board</h3>
+            <p class="mono-block">Timeline · Heatmap · Diff · Suspects · Error budget · Verdict — each with Show evidence → SQL + window + confidence</p>
+            <ul>
+              <li>Deterministic demo story</li>
+              <li>ClickHouse-backed panels</li>
+              <li>Trigger.dev task orchestration</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section id="board" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Incident proof board</p>
+          <h2>Six panels. One story. Full evidence.</h2>
+          <p class="section-lede">
+            The chat input starts the investigation. The response is the visual, interactive artifact —
+            assembled progressively so the narrative lands before the last panel paints.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature">
+            <div class="feature-icon" data-i="1">⏱</div>
+            <h3>Anomaly timeline</h3>
+            <p>p95 latency with rolling baseline bands and a hard deploy marker at 14:32. The break is visually obvious — at least 2× baseline.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" data-i="2">▣</div>
+            <h3>Service heatmap</h3>
+            <p>Click a service to highlight it across the board. payment-service lights up red; peers stay cool gray/green.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" data-i="3">Δ</div>
+            <h3>Before / after diff</h3>
+            <p>Span-level amplification from a single CTE query. payment spans jump ~8.3× while inventory and shipping stay flat.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" data-i="4">⇅</div>
+            <h3>Suspect ladder</h3>
+            <p>Ranked root-cause candidates. payment-service v2.4.1 sits at #1 with the retry-timeout config diff called out.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" data-i="5">⌀</div>
+            <h3>Error-budget impact</h3>
+            <p>Demo-visible burn so the business cost of the spike is part of the board, not a follow-up tab.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon" data-i="6">✓</div>
+            <h3>Verdict + action</h3>
+            <p>A clear close: roll back v2.4.1 or restore the 3s retry timeout — grounded in the panels above it.</p>
+          </article>
+        </div>
+
+        <div class="evidence-callout">
+          <div>
+            <h3>Show evidence on every panel</h3>
+            <p>
+              Each drawer exposes the ClickHouse query, time window, row count, confidence,
+              and Trigger.dev task context. Timeline includes both the raw
+              <code>http_logs</code> anomaly-band query and a
+              <code>quantileMerge</code> proof against
+              <code>latency_rollup_1m</code> (AggregatingMergeTree State/Merge).
+            </p>
+          </div>
+          <pre class="code-snip" tabindex="0"><code>SELECT minute, service, p95_ms,
+  rolling_avg + 3 * rolling_stddev AS upper_band,
+  p95_ms > rolling_avg + 3 * rolling_stddev AS is_anomaly
+FROM baselines
+WHERE rolling_avg IS NOT NULL
+ORDER BY minute, service;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW -->
+    <section id="how" class="section">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">How it works</p>
+          <h2>One question. Five tasks. A board you can trust.</h2>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <div class="step-num">01</div>
+            <div>
+              <h3>Ask the incident question</h3>
+              <p>Start from chat with the frozen demo sentence — or render the fixture board offline for judges and demos without credentials.</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-num">02</div>
+            <div>
+              <h3>Trigger.dev orchestrates the investigation</h3>
+              <p>The agent runs schema tasks: <code>query-latency</code>, <code>query-heatmap</code>, <code>query-diff</code>, <code>rank-suspects</code>, <code>calculate-error-budget</code> — each a first-class unit in the run trace.</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-num">03</div>
+            <div>
+              <h3>ClickHouse answers with depth</h3>
+              <p>MergeTree source tables, AggregatingMergeTree rollups with <code>quantileState</code> / <code>quantileMerge</code>, window-function anomaly bands, and before/after span diffs — all readonly.</p>
+            </div>
+          </li>
+          <li>
+            <div class="step-num">04</div>
+            <div>
+              <h3>Board assembles progressively</h3>
+              <p>Skeleton panels fill as tasks complete. Open evidence drawers, click the payment hotspot, walk the suspect ladder, close on the verdict.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="story-card">
+          <p class="eyebrow">Seeded incident</p>
+          <h3>The demo story is the product.</h3>
+          <p>
+            At <strong>14:32</strong>, <strong>payment-service v2.4.1</strong> changes retry timeout from
+            <strong>3s → 15s</strong>. Checkout p95 spikes ~2.6×. Payment spans amplify ~8.3×.
+            Everything on the board exists to make that story impossible to miss.
+          </p>
+          <blockquote>
+            “The agent found that the 14:32 payment deploy changed retry behavior, causing checkout latency to spike, and every visual is backed by ClickHouse evidence.”
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- STACK -->
+    <section id="stack" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Stack</p>
+          <h2>Built for the hackathon judges — and for real SQL depth.</h2>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-card">
+            <h3>ClickHouse</h3>
+            <p>Primary data layer. MergeTree logs &amp; spans, deploy events, AggregatingMergeTree 1m rollups, parameterized readonly queries.</p>
+          </div>
+          <div class="stack-card">
+            <h3>Trigger.dev</h3>
+            <p>Chat agent with versioned prompt telemetry, task-backed tools, typed board parts, optional live streaming, and run-trace proof.</p>
+          </div>
+          <div class="stack-card">
+            <h3>Next.js</h3>
+            <p>Incident board UI with progressive skeleton assembly, fixture mode for offline judging, and live transport when credentials are set.</p>
+          </div>
+          <div class="stack-card">
+            <h3>Fixture + smoke</h3>
+            <p><code>pnpm smoke</code> asserts the demo story is visually obvious before you hit record — deploy marker, 2× spike, payment #1, rollup path present.</p>
+          </div>
+        </div>
+
+        <div class="quickstart">
+          <div>
+            <h3>Quick start</h3>
+            <p>Public fixture-mode demo needs nothing. Local path is three commands.</p>
+          </div>
+          <pre class="code-snip" tabindex="0"><code>pnpm install
+pnpm smoke
+pnpm dev
+
+# then ask:
+# Why did checkout latency spike after the 14:32 deploy?</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="container cta-inner">
+        <h2>See the board assemble in under a minute.</h2>
+        <p>Open the public fixture demo, or clone the repo and run smoke checks before your own recording.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary btn-lg" href="https://clickfuse.vercel.app" target="_blank" rel="noopener noreferrer">Launch demo</a>
+          <a class="btn btn-ghost btn-lg" href="https://youtu.be/CF0X12awlP8" target="_blank" rel="noopener noreferrer">Watch demo video</a>
+          <a class="btn btn-secondary btn-lg" href="https://github.com/knarayanareddy/Clickfuse" target="_blank" rel="noopener noreferrer">Star on GitHub</a>
+        </div>
+        <p class="cta-note">Build Week prototype · MIT License · Not a general observability platform</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 6.5V12c0 5.25 3.4 9.74 8 11 4.6-1.26 8-5.75 8-11V6.5L12 2Z" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">Clickfuse</span>
+      </a>
+      <p>Evidence-backed incident proof boards for the ClickHouse + Trigger.dev hackathon.</p>
+      <div class="footer-links">
+        <a href="https://github.com/knarayanareddy/Clickfuse" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://clickfuse.vercel.app" target="_blank" rel="noopener noreferrer">Demo</a>
+        <a href="https://youtu.be/CF0X12awlP8" target="_blank" rel="noopener noreferrer">Video</a>
+        <a href="https://github.com/knarayanareddy/Clickfuse/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

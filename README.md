@@ -22,6 +22,14 @@ Public fixture-mode demo:
 
 https://clickfuse.vercel.app
 
+Marketing landing page:
+
+https://clickfuse.vercel.app/landing/index.html
+
+Demo video:
+
+https://youtu.be/CF0X12awlP8
+
 ```bash
 pnpm install
 pnpm smoke
