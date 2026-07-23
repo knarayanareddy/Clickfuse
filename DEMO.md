@@ -17,7 +17,11 @@ If Trigger/CH credentials are missing: **Render fixture board**. Same story numb
 
 ## Public demo URL
 
-Not published from this pass (no Vercel/Trigger deploy credentials in workspace). Manual:
+Published fixture-mode demo:
+
+https://clickfuse.vercel.app
+
+Live Trigger.dev + ClickHouse mode still requires credentials. Manual:
 
 ```bash
 # .env.local — see .env.example

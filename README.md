@@ -18,6 +18,10 @@ Instead of returning a paragraph, it builds an evidence-backed incident board: a
 
 ## Quick start
 
+Public fixture-mode demo:
+
+https://clickfuse.vercel.app
+
 ```bash
 pnpm install
 pnpm smoke
