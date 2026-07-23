@@ -11,7 +11,7 @@ Instead of returning a paragraph, it builds an evidence-backed incident board: a
 - Next.js incident board UI with progressive skeleton assembly.
 - Deterministic fixture-mode investigation data for offline judging.
 - ClickHouse schema with `MergeTree` source tables and an `AggregatingMergeTree` rollup using `quantileState`, `sumState` and `countState`.
-- Window-function anomaly SQL and before/after span diff SQL.
+- Window-function anomaly SQL, before/after span diff SQL and a `quantileMerge` rollup proof query.
 - Seed script for the demo incident: `payment-service` v2.4.1 changes retry timeout from `3s` to `15s` at `14:32`.
 - Trigger.dev chat agent with versioned prompt telemetry, task-backed tools, typed board parts and optional live streaming.
 - `pnpm smoke` checks that the demo story is visually obvious before recording.
@@ -111,6 +111,7 @@ The smoke suite checks:
 - before/after diff shows a 7–10x payment span amplification;
 - error-budget burn is demo-visible;
 - the AggregatingMergeTree State/Merge pattern is present;
+- a rollup proof query uses `quantileMerge` / `countMerge` against `latency_rollup_1m`;
 - Trigger.dev live-agent wiring uses `prompts.define`, `chat.local`, `ai.toolExecute` and `streamText`;
 - live ClickHouse task path uses parameterized `client.query` calls;
 - local secret files are not present.
@@ -137,3 +138,7 @@ Suggested flow:
 ## Limitations
 
 This is a bounded Build Week prototype, not a general observability platform. The fixture mode is deterministic by design. The current implementation is optimized for one incident story and one supported board shape. It should not be described as autonomous root-cause proof for arbitrary production systems.
+
+## License
+
+Clickfuse is released under the MIT License. See `LICENSE`.

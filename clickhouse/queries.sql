@@ -37,6 +37,22 @@ FROM baselines
 WHERE rolling_avg IS NOT NULL
 ORDER BY minute, service;
 
+-- AggregatingMergeTree rollup proof
+SELECT
+    minute,
+    service,
+    endpoint,
+    round(quantileMerge(0.5)(p50_state), 1) AS p50_ms,
+    round(quantileMerge(0.95)(p95_state), 1) AS p95_ms,
+    round(quantileMerge(0.99)(p99_state), 1) AS p99_ms,
+    sumMerge(error_count_state) AS error_count,
+    countMerge(request_count_state) AS request_count
+FROM latency_rollup_1m
+WHERE minute BETWEEN {windowStart:DateTime} AND {windowEnd:DateTime}
+GROUP BY minute, service, endpoint
+ORDER BY minute, service, endpoint
+LIMIT 20;
+
 -- Before / after service diff
 WITH baseline AS (
     SELECT service, avg(duration_ms) AS avg_ms
