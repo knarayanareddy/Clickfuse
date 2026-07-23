@@ -8,9 +8,10 @@ import {
   diffQuery,
   errorBudgetQuery,
   heatmapQuery,
+  rollupQuery,
   timelineQuery
 } from "./queries.ts";
-import type { DiffRow, HeatmapPart, IncidentBoard, ServiceName, TimelinePoint } from "./types.ts";
+import type { DiffRow, Evidence, HeatmapPart, IncidentBoard, ServiceName, TimelinePoint } from "./types.ts";
 
 type TimelineRow = {
   minute: string;
@@ -48,10 +49,74 @@ type ErrorBudgetRow = {
   exhaustion_estimate: string;
 };
 
+type RollupRow = {
+  minute: string;
+  service: ServiceName;
+  endpoint: string;
+  p50_ms: number | string;
+  p95_ms: number | string;
+  p99_ms: number | string;
+  errors: number | string;
+  requests: number | string;
+};
+
+/** Soft-fail AggregatingMergeTree rollup proof for evidence drawer / smoke. */
+export async function getRollupEvidence(): Promise<Pick<Evidence, "query" | "rowCount" | "durationMs" | "note">> {
+  if (!hasClickHouseEnv()) {
+    return {
+      query: rollupQuery,
+      rowCount: 305,
+      durationMs: 18,
+      note: "fixture: quantileMerge against latency_rollup_1m (AggregatingMergeTree State/Merge)"
+    };
+  }
+
+  const started = performance.now();
+  try {
+    const rows = await queryRows<RollupRow>(rollupQuery, windowParams());
+    if (rows.length === 0) {
+      return {
+        query: rollupQuery,
+        rowCount: 0,
+        durationMs: durationSince(started),
+        note: "latency_rollup_1m empty — seed schema/MV then re-query (fail soft)"
+      };
+    }
+    return {
+      query: rollupQuery,
+      rowCount: rows.length,
+      durationMs: durationSince(started),
+      note: `quantileMerge p95 from latency_rollup_1m (${rows.length} buckets)`
+    };
+  } catch {
+    return {
+      query: rollupQuery,
+      rowCount: 0,
+      durationMs: durationSince(started),
+      note: "rollup query failed soft — table or MV may be missing"
+    };
+  }
+}
+
+function withRollupEvidence(
+  base: Evidence,
+  rollup: Pick<Evidence, "query" | "rowCount" | "durationMs" | "note">
+): Evidence {
+  return {
+    ...base,
+    query: `${base.query}\n\n-- AggregatingMergeTree rollup proof (quantileMerge)\n${rollup.query}`,
+    durationMs: Math.max(base.durationMs ?? 0, rollup.durationMs ?? 0),
+    note: rollup.note
+  };
+}
+
 export async function getTimelinePart(): Promise<IncidentBoard["timeline"]> {
   if (!hasClickHouseEnv()) return buildIncidentBoard().timeline;
   const started = performance.now();
-  const rows = await queryRows<TimelineRow>(timelineQuery, windowParams());
+  const [rows, rollup] = await Promise.all([
+    queryRows<TimelineRow>(timelineQuery, windowParams()),
+    getRollupEvidence()
+  ]);
   return {
     points: rows.map((row) => ({
       minute: normalizeMinute(row.minute),
@@ -62,14 +127,17 @@ export async function getTimelinePart(): Promise<IncidentBoard["timeline"]> {
       lower_band: toNumber(row.lower_band),
       is_anomaly: toBoolean(row.is_anomaly)
     })),
-    evidence: {
-      query: timelineQuery,
-      rowCount: rows.length,
-      timeWindow: { start: WINDOW_START, end: WINDOW_END },
-      confidence: 0.94,
-      taskId: "query-latency",
-      durationMs: durationSince(started)
-    }
+    evidence: withRollupEvidence(
+      {
+        query: timelineQuery,
+        rowCount: rows.length,
+        timeWindow: { start: WINDOW_START, end: WINDOW_END },
+        confidence: 0.94,
+        taskId: "query-latency",
+        durationMs: durationSince(started)
+      },
+      rollup
+    )
   };
 }
 

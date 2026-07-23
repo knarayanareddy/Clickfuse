@@ -11,7 +11,7 @@ Instead of returning a paragraph, it builds an evidence-backed incident board: a
 - Next.js incident board UI with progressive skeleton assembly.
 - Deterministic fixture-mode investigation data for offline judging.
 - ClickHouse schema with `MergeTree` source tables and an `AggregatingMergeTree` rollup using `quantileState`, `sumState` and `countState`.
-- Window-function anomaly SQL, before/after span diff SQL and a `quantileMerge` rollup proof query.
+- Window-function anomaly SQL, before/after span diff SQL and `quantileMerge` rollup proof against `latency_rollup_1m`.
 - Seed script for the demo incident: `payment-service` v2.4.1 changes retry timeout from `3s` to `15s` at `14:32`.
 - Trigger.dev chat agent with versioned prompt telemetry, task-backed tools, typed board parts and optional live streaming.
 - `pnpm smoke` checks that the demo story is visually obvious before recording.
@@ -50,7 +50,7 @@ pnpm trigger:dev
 pnpm dev
 ```
 
-In live mode, the frontend uses `useTriggerChatTransport`, the server mints a session-scoped public access token, and `trigger/incident-agent.ts` returns an AI SDK `streamText()` result. The agent declares five task-backed tools with `ai.toolExecute()`, initializes run-scoped context with `chat.local`, and resolves the `clickfuse-incident-investigator` prompt with `prompts.define()` so the Trigger.dev dashboard can show generation telemetry.
+In live mode, the frontend uses `useTriggerChatTransport`, the server mints a session-scoped public access token, and `trigger/incident-agent.ts` returns an AI SDK `streamText()` result. The agent declares five task-backed tools with `ai.toolExecute()`, initializes run-scoped context with `chat.local`, and resolves the `clickfuse-incident-investigator` prompt with `prompts.define()` so the Trigger.dev dashboard can show generation telemetry. The Timeline panel is also sourced from an explicit `queryLatencyTask.triggerAndWait()` call, and the resulting Trigger.dev run id is stamped onto the Timeline evidence drawer.
 
 When ClickHouse credentials are present, those task bodies execute the parameterized SQL in `src/lib/queries.ts` through the readonly ClickHouse client. Without credentials, they fall back to the deterministic fixture board so offline judging still works.
 
@@ -95,6 +95,8 @@ It models the investigation as separate schema tasks:
 
 Those tasks are the intended observability units in the Trigger.dev run trace. The demo should show the run trace after the board completes to prove orchestration, timings and task boundaries. In fixture mode, the same deterministic `buildIncidentBoard()` data powers the board without requiring credentials; in live mode, `src/lib/live-clickhouse.ts` uses ClickHouse query results for timeline, heatmap, diff, deploy marker and error budget panels.
 
+The Timeline evidence drawer includes both the raw `http_logs` anomaly-band query and a soft-fail AggregatingMergeTree proof query using `quantileMerge` / `countMerge` against `latency_rollup_1m`. If the rollup table is unavailable or empty in a local demo database, the main incident board still renders and the evidence note explains the missing optional proof path.
+
 ## Smoke checks
 
 ```bash
@@ -110,10 +112,9 @@ The smoke suite checks:
 - `payment-service` is the top suspect;
 - before/after diff shows a 7–10x payment span amplification;
 - error-budget burn is demo-visible;
-- the AggregatingMergeTree State/Merge pattern is present;
-- a rollup proof query uses `quantileMerge` / `countMerge` against `latency_rollup_1m`;
-- Trigger.dev live-agent wiring uses `prompts.define`, `chat.local`, `ai.toolExecute` and `streamText`;
-- live ClickHouse task path uses parameterized `client.query` calls;
+- the AggregatingMergeTree State/Merge schema and `quantileMerge` evidence path are present;
+- Trigger.dev live-agent wiring uses `prompts.define`, `chat.local`, `ai.toolExecute`, `queryLatencyTask.triggerAndWait` and `streamText`;
+- live ClickHouse task path uses parameterized `client.query` calls for timeline, diff and rollup proof queries;
 - local secret files are not present.
 
 Warnings are acceptable in offline fixture mode. Failures mean the demo story is not strong enough to record.

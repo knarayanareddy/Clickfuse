@@ -11,6 +11,7 @@ import {
   getHeatmapPart,
   getTimelinePart
 } from "../src/lib/live-clickhouse";
+import { WINDOW_END, WINDOW_START } from "../src/lib/queries";
 import type { IncidentBoard } from "../src/lib/types";
 
 const registry = createProviderRegistry({ openai });
@@ -152,11 +153,28 @@ export const incidentAgent = chat.withUIMessage<IncidentUIMessage>().agent({
     });
   },
   run: async ({ messages, signal, tools }) => {
+    // Timeline is sourced from a real query-latency schemaTask run so the
+    // Trigger trace → board panel path is attributable in the demo.
+    const latencyRun = await queryLatencyTask.triggerAndWait({
+      windowStart: WINDOW_START,
+      windowEnd: WINDOW_END
+    });
+
     const board = await buildLiveIncidentBoard();
+    const timeline = latencyRun.ok
+      ? {
+          ...latencyRun.output,
+          evidence: {
+            ...latencyRun.output.evidence,
+            taskId: "query-latency",
+            runId: latencyRun.id
+          }
+        }
+      : board.timeline;
 
     chat.response.write({
       type: "data-timeline",
-      data: board.timeline
+      data: timeline
     });
     chat.response.write({
       type: "data-heatmap",
