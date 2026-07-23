@@ -2,10 +2,10 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useTriggerChatTransport } from "@trigger.dev/sdk/chat/react";
-import { FormEvent, useMemo, useState } from "react";
-import { mintChatAccessToken, startChatSession } from "./actions";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { listPromotedIncidents, mintChatAccessToken, promoteVerdictToIncident, startChatSession } from "./actions";
 import { buildIncidentBoard } from "../src/lib/investigation";
-import type { IncidentBoard } from "../src/lib/types";
+import type { IncidentBoard, IncidentCase } from "../src/lib/types";
 import type { ServiceName } from "../src/lib/types";
 import type { incidentAgent } from "../trigger/incident-agent";
 
@@ -14,6 +14,9 @@ export default function Home() {
   const [question, setQuestion] = useState("Why did checkout latency spike after the 14:32 deploy?");
   const [selectedService, setSelectedService] = useState<ServiceName | "all">("all");
   const [openEvidence, setOpenEvidence] = useState<string | null>("timeline");
+  const [incidentCases, setIncidentCases] = useState<IncidentCase[]>([]);
+  const [promoteMessage, setPromoteMessage] = useState<string | null>(null);
+  const [isPromoting, startPromoteTransition] = useTransition();
   const fixtureBoard = useMemo(() => buildIncidentBoard(), []);
   const liveMode = process.env.NEXT_PUBLIC_TRIGGER_CHAT_ENABLED === "true";
   const transport = useTriggerChatTransport<typeof incidentAgent>({
@@ -27,6 +30,10 @@ export default function Home() {
     [fixtureBoard, liveMode, messages]
   );
 
+  useEffect(() => {
+    void listPromotedIncidents().then(setIncidentCases).catch(() => setIncidentCases([]));
+  }, []);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
@@ -34,6 +41,22 @@ export default function Home() {
       void sendMessage({ text: question });
     }
   }
+
+  function promoteCurrentVerdict() {
+    setPromoteMessage(null);
+    startPromoteTransition(() => {
+      void promoteVerdictToIncident(board)
+        .then((incident) => {
+          setIncidentCases((existing) => [incident, ...existing].slice(0, 20));
+          setPromoteMessage(`${incident.id} opened and linked to the proof board.`);
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "unknown persistence error";
+          setPromoteMessage(`Could not promote verdict: ${message}`);
+        });
+    });
+  }
+
 
   return (
     <main className="shell">
@@ -72,6 +95,10 @@ export default function Home() {
           setSelectedService={setSelectedService}
           openEvidence={openEvidence}
           setOpenEvidence={setOpenEvidence}
+          incidentCases={incidentCases}
+          promoteMessage={promoteMessage}
+          isPromoting={isPromoting}
+          onPromote={promoteCurrentVerdict}
         />
       )}
     </main>
@@ -131,13 +158,21 @@ function IncidentBoard({
   selectedService,
   setSelectedService,
   openEvidence,
-  setOpenEvidence
+  setOpenEvidence,
+  incidentCases,
+  promoteMessage,
+  isPromoting,
+  onPromote
 }: {
   board: ReturnType<typeof buildIncidentBoard>;
   selectedService: ServiceName | "all";
   setSelectedService: (service: ServiceName | "all") => void;
   openEvidence: string | null;
   setOpenEvidence: (id: string | null) => void;
+  incidentCases: IncidentCase[];
+  promoteMessage: string | null;
+  isPromoting: boolean;
+  onPromote: () => void;
 }) {
   const selected = selectedService === "all" ? null : selectedService;
   const timeline = selected ? board.timeline.points.filter((p) => p.service === selected) : board.timeline.points;
@@ -180,6 +215,13 @@ function IncidentBoard({
         board={board}
         open={openEvidence === "verdict"}
         onToggle={() => setOpenEvidence(openEvidence === "verdict" ? null : "verdict")}
+      />
+      <IncidentCaseCard
+        board={board}
+        incidentCases={incidentCases}
+        promoteMessage={promoteMessage}
+        isPromoting={isPromoting}
+        onPromote={onPromote}
       />
     </section>
   );
@@ -397,6 +439,75 @@ function VerdictCard({
         {board.verdict.signals.map((signal) => <li key={signal}>{signal}</li>)}
       </ul>
       <EvidenceDrawer evidence={board.verdict.evidence} open={open} onToggle={onToggle} />
+    </article>
+  );
+}
+
+function IncidentCaseCard({
+  board,
+  incidentCases,
+  promoteMessage,
+  isPromoting,
+  onPromote
+}: {
+  board: ReturnType<typeof buildIncidentBoard>;
+  incidentCases: IncidentCase[];
+  promoteMessage: string | null;
+  isPromoting: boolean;
+  onPromote: () => void;
+}) {
+  const latest = incidentCases[0];
+  const evidenceIds = latest?.linkedAnalytics.evidenceTaskIds ?? [
+    board.timeline.evidence.taskId,
+    board.diff.evidence.taskId,
+    board.verdict.evidence.taskId
+  ].filter((taskId): taskId is string => Boolean(taskId));
+
+  return (
+    <article className="card wide incident-case-card">
+      <CardHeader title="Operational incident case" label="OLTP + OLAP handoff" tone="green" />
+      <div className="incident-case-grid">
+        <div>
+          <p className="caption">
+            Promote the analytical verdict into a mutable incident record: status, owner, action items, and links back to
+            the ClickHouse evidence that produced the answer.
+          </p>
+          <button className="promote-button" type="button" onClick={onPromote} disabled={isPromoting}>
+            {isPromoting ? "Opening incident…" : "Promote verdict to incident"}
+          </button>
+          {promoteMessage && <p className="promote-message">{promoteMessage}</p>}
+        </div>
+        <div className="incident-case">
+          {latest ? (
+            <>
+              <div className="case-topline">
+                <strong>{latest.id}</strong>
+                <span>{latest.status}</span>
+              </div>
+              <h3>{latest.title}</h3>
+              <dl>
+                <div><dt>Assignee</dt><dd>{latest.assignee}</dd></div>
+                <div><dt>Created</dt><dd>{new Date(latest.createdAt).toLocaleString()}</dd></div>
+                <div><dt>Confidence</dt><dd>{Math.round(latest.confidence * 100)}%</dd></div>
+                <div><dt>Burn rate</dt><dd>{latest.linkedAnalytics.burnRate}x</dd></div>
+              </dl>
+              <ol>
+                {latest.actionItems.map((item) => <li key={item}>{item}</li>)}
+              </ol>
+            </>
+          ) : (
+            <>
+              <div className="case-topline">
+                <strong>Draft from current verdict</strong>
+                <span>not opened</span>
+              </div>
+              <h3>{board.verdict.rootCause}</h3>
+              <p className="caption">{board.verdict.recommendedAction}</p>
+            </>
+          )}
+          <p className="case-links">Linked analytics: {evidenceIds.join(" · ")}</p>
+        </div>
+      </div>
     </article>
   );
 }

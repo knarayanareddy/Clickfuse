@@ -2,6 +2,8 @@
 
 import { auth } from "@trigger.dev/sdk";
 import { chat } from "@trigger.dev/sdk/ai";
+import { listIncidentCases, saveIncidentCaseFromVerdict } from "../src/lib/incident-cases";
+import type { IncidentBoard } from "../src/lib/types";
 import type { incidentAgent } from "../trigger/incident-agent";
 
 export const startChatSession = chat.createStartSessionAction<typeof incidentAgent>("incident-agent");
@@ -18,4 +20,12 @@ export async function mintChatAccessToken(chatId: string) {
     },
     expirationTime: "1h"
   });
+}
+
+export async function listPromotedIncidents() {
+  return listIncidentCases();
+}
+
+export async function promoteVerdictToIncident(board: IncidentBoard) {
+  return saveIncidentCaseFromVerdict(board);
 }
