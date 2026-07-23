@@ -3,11 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { useTriggerChatTransport } from "@trigger.dev/sdk/chat/react";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
-import { listPromotedIncidents, mintChatAccessToken, promoteVerdictToIncident, startChatSession } from "./actions";
+import { mintChatAccessToken, startChatSession } from "./actions";
+import { incidentCaseFromVerdict, isIncidentCase } from "../src/lib/incident-case-model";
 import { buildIncidentBoard } from "../src/lib/investigation";
 import type { IncidentBoard, IncidentCase } from "../src/lib/types";
 import type { ServiceName } from "../src/lib/types";
 import type { incidentAgent } from "../trigger/incident-agent";
+
+const incidentStorageKey = "clickfuse.incidentCases";
 
 export default function Home() {
   const [submitted, setSubmitted] = useState(false);
@@ -31,7 +34,12 @@ export default function Home() {
   );
 
   useEffect(() => {
-    void listPromotedIncidents().then(setIncidentCases).catch(() => setIncidentCases([]));
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(incidentStorageKey) ?? "[]") as unknown;
+      setIncidentCases(Array.isArray(parsed) ? parsed.filter(isIncidentCase) : []);
+    } catch {
+      setIncidentCases([]);
+    }
   }, []);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -45,15 +53,16 @@ export default function Home() {
   function promoteCurrentVerdict() {
     setPromoteMessage(null);
     startPromoteTransition(() => {
-      void promoteVerdictToIncident(board)
-        .then((incident) => {
-          setIncidentCases((existing) => [incident, ...existing].slice(0, 20));
-          setPromoteMessage(`${incident.id} opened and linked to the proof board.`);
-        })
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : "unknown persistence error";
-          setPromoteMessage(`Could not promote verdict: ${message}`);
-        });
+      try {
+        const incident = incidentCaseFromVerdict(board);
+        const next = [incident, ...incidentCases].slice(0, 20);
+        window.localStorage.setItem(incidentStorageKey, JSON.stringify(next));
+        setIncidentCases(next);
+        setPromoteMessage(`${incident.id} opened locally and linked to the proof board.`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "unknown browser persistence error";
+        setPromoteMessage(`Could not promote verdict: ${message}`);
+      }
     });
   }
 

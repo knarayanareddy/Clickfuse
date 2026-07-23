@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { incidentCaseFromVerdict } from "../src/lib/incident-cases.ts";
+import { incidentCaseFromVerdict } from "../src/lib/incident-case-model.ts";
 import { buildIncidentBoard, smokeMetrics } from "../src/lib/investigation.ts";
 import { hasClickHouseEnv } from "../src/lib/clickhouse.ts";
 
