@@ -95,8 +95,10 @@ if (
 }
 
 const schema = existsSync("clickhouse/schema.sql") ? readFileSync("clickhouse/schema.sql", "utf8") : "";
+const queries = existsSync("clickhouse/queries.sql") ? readFileSync("clickhouse/queries.sql", "utf8") : "";
 const agentSource = existsSync("trigger/incident-agent.ts") ? readFileSync("trigger/incident-agent.ts", "utf8") : "";
 const liveClickHouseSource = existsSync("src/lib/live-clickhouse.ts") ? readFileSync("src/lib/live-clickhouse.ts", "utf8") : "";
+const querySource = existsSync("src/lib/queries.ts") ? readFileSync("src/lib/queries.ts", "utf8") : "";
 if (
   schema.includes("AggregatingMergeTree") &&
   schema.includes("quantileState(0.95)") &&
@@ -105,6 +107,17 @@ if (
   pass("rollup", "AggregatingMergeTree State/Merge schema present");
 } else {
   fail("rollup", "AggregatingMergeTree State/Merge schema missing or incomplete");
+}
+
+if (
+  queries.includes("latency_rollup_1m") &&
+  queries.includes("quantileMerge(0.95)") &&
+  querySource.includes("rollupEvidenceQuery") &&
+  querySource.includes("countMerge(request_count_state)")
+) {
+  pass("rollup query", "rollup proof query uses quantileMerge/countMerge against latency_rollup_1m");
+} else {
+  fail("rollup query", "missing quantileMerge/countMerge proof query against latency_rollup_1m");
 }
 
 if (
