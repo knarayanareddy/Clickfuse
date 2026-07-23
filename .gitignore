@@ -10,3 +10,4 @@ coverage
 *.tsbuildinfo
 clickfuse-fixture.json
 .clickfuse-data/
+.vercel
