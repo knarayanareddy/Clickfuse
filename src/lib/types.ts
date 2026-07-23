@@ -12,6 +12,10 @@ export type Evidence = {
   confidence: number;
   taskId?: string;
   durationMs?: number;
+  /** Trigger.dev run id when this panel was produced by a schemaTask. */
+  runId?: string;
+  /** Soft-fail note for optional rollup / secondary proof paths. */
+  note?: string;
 };
 
 export type TimelinePoint = {

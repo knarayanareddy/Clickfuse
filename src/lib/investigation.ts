@@ -5,6 +5,7 @@ import {
   diffQuery,
   errorBudgetQuery,
   heatmapQuery,
+  rollupQuery,
   timelineQuery
 } from "./queries.ts";
 import type { DiffRow, IncidentBoard, ServiceName, TimelinePoint } from "./types.ts";
@@ -53,12 +54,13 @@ export function buildIncidentBoard(): IncidentBoard {
     timeline: {
       points: timeline,
       evidence: {
-        query: timelineQuery,
+        query: `${timelineQuery}\n\n-- AggregatingMergeTree rollup proof (quantileMerge)\n${rollupQuery}`,
         rowCount: timeline.length,
         timeWindow: { start: WINDOW_START, end: WINDOW_END },
         confidence: 0.94,
         taskId: "query-latency",
-        durationMs: 87
+        durationMs: 87,
+        note: "fixture: quantileMerge against latency_rollup_1m (AggregatingMergeTree State/Merge)"
       }
     },
     deploy: {

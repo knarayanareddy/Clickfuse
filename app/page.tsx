@@ -537,7 +537,12 @@ function EvidenceDrawer({
       <button onClick={onToggle}>{open ? "Hide evidence" : label}</button>
       {open && (
         <div className="evidence-body">
-          <p>{evidence.rowCount} rows · confidence {Math.round(evidence.confidence * 100)}% · {evidence.taskId} {evidence.durationMs ? `(${evidence.durationMs}ms)` : ""}</p>
+          <p>
+            {evidence.rowCount} rows · confidence {Math.round(evidence.confidence * 100)}% · {evidence.taskId}
+            {evidence.runId ? ` · run ${evidence.runId}` : ""}
+            {evidence.durationMs ? ` (${evidence.durationMs}ms)` : ""}
+            {evidence.note ? ` · ${evidence.note}` : ""}
+          </p>
           <pre>{evidence.query}</pre>
         </div>
       )}

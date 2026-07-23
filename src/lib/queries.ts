@@ -112,6 +112,21 @@ SELECT
     'about 4 hours' AS exhaustion_estimate
 FROM total, incident;`;
 
+/** AggregatingMergeTree State/Merge proof — uses quantileMerge against latency_rollup_1m. */
+export const rollupQuery = `SELECT
+    minute,
+    service,
+    endpoint,
+    quantileMerge(0.5)(p50_state) AS p50_ms,
+    quantileMerge(0.95)(p95_state) AS p95_ms,
+    quantileMerge(0.99)(p99_state) AS p99_ms,
+    sumMerge(error_count_state) AS errors,
+    countMerge(request_count_state) AS requests
+FROM latency_rollup_1m
+WHERE minute BETWEEN {windowStart:DateTime} AND {windowEnd:DateTime}
+GROUP BY minute, service, endpoint
+ORDER BY minute, service, endpoint;`;
+
 export const queryLogProofQuery = `SELECT
     event_time,
     query_duration_ms,

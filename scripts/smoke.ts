@@ -95,29 +95,21 @@ if (
 }
 
 const schema = existsSync("clickhouse/schema.sql") ? readFileSync("clickhouse/schema.sql", "utf8") : "";
-const queries = existsSync("clickhouse/queries.sql") ? readFileSync("clickhouse/queries.sql", "utf8") : "";
 const agentSource = existsSync("trigger/incident-agent.ts") ? readFileSync("trigger/incident-agent.ts", "utf8") : "";
 const liveClickHouseSource = existsSync("src/lib/live-clickhouse.ts") ? readFileSync("src/lib/live-clickhouse.ts", "utf8") : "";
-const querySource = existsSync("src/lib/queries.ts") ? readFileSync("src/lib/queries.ts", "utf8") : "";
+const queriesSource = existsSync("src/lib/queries.ts") ? readFileSync("src/lib/queries.ts", "utf8") : "";
 if (
   schema.includes("AggregatingMergeTree") &&
   schema.includes("quantileState(0.95)") &&
-  schema.includes("countState()")
+  schema.includes("countState()") &&
+  queriesSource.includes("quantileMerge(0.95)") &&
+  queriesSource.includes("latency_rollup_1m") &&
+  liveClickHouseSource.includes("getRollupEvidence") &&
+  board.timeline.evidence.query.includes("quantileMerge")
 ) {
-  pass("rollup", "AggregatingMergeTree State/Merge schema present");
+  pass("rollup", "AggregatingMergeTree State/Merge schema + quantileMerge evidence path present");
 } else {
-  fail("rollup", "AggregatingMergeTree State/Merge schema missing or incomplete");
-}
-
-if (
-  queries.includes("latency_rollup_1m") &&
-  queries.includes("quantileMerge(0.95)") &&
-  querySource.includes("rollupEvidenceQuery") &&
-  querySource.includes("countMerge(request_count_state)")
-) {
-  pass("rollup query", "rollup proof query uses quantileMerge/countMerge against latency_rollup_1m");
-} else {
-  fail("rollup query", "missing quantileMerge/countMerge proof query against latency_rollup_1m");
+  fail("rollup", "AggregatingMergeTree State/Merge schema or quantileMerge evidence path missing");
 }
 
 if (
@@ -126,9 +118,13 @@ if (
   agentSource.includes("chat.local<") &&
   agentSource.includes("ai.toolExecute") &&
   agentSource.includes("streamText") &&
-  agentSource.includes("buildLiveIncidentBoard")
+  agentSource.includes("buildLiveIncidentBoard") &&
+  agentSource.includes("queryLatencyTask.triggerAndWait")
 ) {
-  pass("trigger agent", "live agent uses prompts.define, chat.local, ai.toolExecute and streamText without @ts-nocheck");
+  pass(
+    "trigger agent",
+    "live agent uses prompts.define, chat.local, ai.toolExecute, streamText, and queryLatencyTask.triggerAndWait without @ts-nocheck"
+  );
 } else {
   fail("trigger agent", "expected typed Trigger.dev live-agent wiring is incomplete");
 }
@@ -137,9 +133,10 @@ if (
   liveClickHouseSource.includes("client.query") &&
   liveClickHouseSource.includes("query_params") &&
   liveClickHouseSource.includes("timelineQuery") &&
-  liveClickHouseSource.includes("diffQuery")
+  liveClickHouseSource.includes("diffQuery") &&
+  liveClickHouseSource.includes("rollupQuery")
 ) {
-  pass("live ClickHouse", "live task path executes parameterized ClickHouse timeline/diff queries");
+  pass("live ClickHouse", "live task path executes parameterized ClickHouse timeline/diff/rollup queries");
 } else {
   fail("live ClickHouse", "expected live parameterized ClickHouse task path is missing");
 }

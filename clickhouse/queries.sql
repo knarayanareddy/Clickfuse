@@ -76,3 +76,18 @@ SELECT
 FROM baseline
 LEFT JOIN incident USING (service)
 ORDER BY amplification DESC;
+
+-- AggregatingMergeTree rollup proof (State/Merge)
+SELECT
+    minute,
+    service,
+    endpoint,
+    quantileMerge(0.5)(p50_state) AS p50_ms,
+    quantileMerge(0.95)(p95_state) AS p95_ms,
+    quantileMerge(0.99)(p99_state) AS p99_ms,
+    sumMerge(error_count_state) AS errors,
+    countMerge(request_count_state) AS requests
+FROM latency_rollup_1m
+WHERE minute BETWEEN {windowStart:DateTime} AND {windowEnd:DateTime}
+GROUP BY minute, service, endpoint
+ORDER BY minute, service, endpoint;
