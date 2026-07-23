@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { incidentCaseFromVerdict } from "../src/lib/incident-cases.ts";
 import { buildIncidentBoard, smokeMetrics } from "../src/lib/investigation.ts";
 import { hasClickHouseEnv } from "../src/lib/clickhouse.ts";
 
@@ -78,6 +80,20 @@ if (metrics.errorBudget.consumedPct >= 30 && metrics.errorBudget.consumedPct <= 
   fail("error budget", "budget values are not demo-ready");
 }
 
+const incidentCase = incidentCaseFromVerdict(board, new Date("2026-07-22T15:05:00.000Z"));
+if (
+  incidentCase.status === "open" &&
+  incidentCase.assignee === "on-call-sre" &&
+  incidentCase.rootCause === board.verdict.rootCause &&
+  incidentCase.actionItems.length >= 3 &&
+  incidentCase.linkedAnalytics.topSuspect === "payment-service" &&
+  incidentCase.linkedAnalytics.evidenceTaskIds.includes("generate-verdict")
+) {
+  pass("incident case", "verdict can be promoted into an operational incident record linked to analytics evidence");
+} else {
+  fail("incident case", "promoted incident case is missing status, owner, action items or analytics links");
+}
+
 const schema = existsSync("clickhouse/schema.sql") ? readFileSync("clickhouse/schema.sql", "utf8") : "";
 const agentSource = existsSync("trigger/incident-agent.ts") ? readFileSync("trigger/incident-agent.ts", "utf8") : "";
 const liveClickHouseSource = existsSync("src/lib/live-clickhouse.ts") ? readFileSync("src/lib/live-clickhouse.ts", "utf8") : "";
@@ -121,11 +137,11 @@ if (hasClickHouseEnv()) {
   warn("query_log", "fixture mode: run the app once against ClickHouse before recording to populate system.query_log");
 }
 
-const forbiddenTracked = [".env", ".env.local"].filter((file) => existsSync(file));
+const forbiddenTracked = trackedFiles([".env", ".env.local"]);
 if (forbiddenTracked.length === 0) {
-  pass("secrets", "no local env files found in repo checkout");
+  pass("secrets", "no secret-bearing env files are tracked or staged");
 } else {
-  fail("secrets", `secret-bearing files present: ${forbiddenTracked.join(", ")}`);
+  fail("secrets", `secret-bearing files are tracked or staged: ${forbiddenTracked.join(", ")}`);
 }
 
 console.log("Smoke checks\n");
@@ -146,4 +162,13 @@ if (warnings.length > 0) {
   console.log(`Result: smoke checks passed with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`);
 } else {
   console.log("Result: smoke checks passed");
+}
+
+function trackedFiles(files: string[]) {
+  try {
+    const output = execFileSync("git", ["ls-files", "--cached", "--", ...files], { encoding: "utf8" });
+    return output.split("\n").filter(Boolean);
+  } catch {
+    return files.filter((file) => existsSync(file));
+  }
 }

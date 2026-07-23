@@ -76,3 +76,26 @@ export type IncidentBoard = {
     evidence: Evidence;
   };
 };
+
+export type IncidentCase = {
+  id: string;
+  title: string;
+  status: "open" | "acknowledged" | "mitigating" | "resolved";
+  assignee: string;
+  createdAt: string;
+  updatedAt: string;
+  source: "verdict-promotion";
+  rootCause: string;
+  confidence: number;
+  recommendedAction: string;
+  actionItems: string[];
+  linkedAnalytics: {
+    deployService: ServiceName;
+    deployedAt: string;
+    deployVersion: string;
+    topSuspect: ServiceName;
+    errorBudgetConsumedPct: number;
+    burnRate: number;
+    evidenceTaskIds: string[];
+  };
+};
