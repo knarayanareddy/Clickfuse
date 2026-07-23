@@ -21,6 +21,14 @@ Published fixture-mode demo:
 
 https://clickfuse.vercel.app
 
+Marketing landing page:
+
+https://clickfuse.vercel.app/landing/index.html
+
+Demo video:
+
+https://youtu.be/CF0X12awlP8
+
 Live Trigger.dev + ClickHouse mode still requires credentials. Manual:
 
 ```bash
